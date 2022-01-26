@@ -39,7 +39,7 @@ public class JWTViewTab extends JPanel {
   private JLabel keyLabel;
   private JButton verificationIndicator;
   private final JWTTabModel jwtTM;
-  private JLabel lblCookieFlags;
+  private JLabel lblAdditionalData;
   private JLabel lbRegisteredClaims;
 
   public JWTViewTab(JWTTabModel jwtTM) {
@@ -132,14 +132,14 @@ public class JWTViewTab extends JPanel {
     gbc_lbRegisteredClaims.gridy = 8;
     add(lbRegisteredClaims, gbc_lbRegisteredClaims);
 
-    lblCookieFlags = new JLabel(" ");
-    lblCookieFlags.setFont(new Font("Tahoma", Font.BOLD, 12));
-    GridBagConstraints gbc_lblCookieFlags = new GridBagConstraints();
-    gbc_lblCookieFlags.anchor = GridBagConstraints.SOUTHWEST;
-    gbc_lblCookieFlags.insets = new Insets(0, 0, 5, 5);
-    gbc_lblCookieFlags.gridx = 1;
-    gbc_lblCookieFlags.gridy = 9;
-    add(lblCookieFlags, gbc_lblCookieFlags);
+    lblAdditionalData = new JLabel(" ");
+    lblAdditionalData.setFont(new Font("Tahoma", Font.BOLD, 12));
+    GridBagConstraints gbc_lblAdditionalData = new GridBagConstraints();
+    gbc_lblAdditionalData.anchor = GridBagConstraints.SOUTHWEST;
+    gbc_lblAdditionalData.insets = new Insets(0, 0, 5, 5);
+    gbc_lblAdditionalData.gridx = 1;
+    gbc_lblAdditionalData.gridy = 9;
+    add(lblAdditionalData, gbc_lblAdditionalData);
 
     RTextScrollPane sp = new RTextScrollPane(outputField);
     sp.setLineNumbersEnabled(false);
@@ -220,11 +220,8 @@ public class JWTViewTab extends JPanel {
           jwtKeyArea.setEnabled(false);
         }
 
-        if (jwtTM.getcFW().isCookie()) {
-          lblCookieFlags.setText(jwtTM.getcFW().toHTMLString());
-        } else {
-          lblCookieFlags.setText("");
-        }
+        lblAdditionalData.setText(jwtTM.getAdditionalDataAsHtml());
+
         setCaret();
         lbRegisteredClaims.setText(jwtTM.getTimeClaimsAsText());
       }
