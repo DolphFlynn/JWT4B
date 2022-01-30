@@ -1,20 +1,12 @@
 package app.controllers;
 
 import java.awt.Component;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.JWTVerifier;
-import com.auth0.jwt.exceptions.InvalidClaimException;
-import com.auth0.jwt.exceptions.JWTVerificationException;
-import com.auth0.jwt.exceptions.SignatureVerificationException;
-import com.auth0.jwt.interfaces.DecodedJWT;
 
 import app.algorithm.AlgorithmLinker;
 import app.helpers.Output;
@@ -26,8 +18,9 @@ import gui.JWTViewTab;
 import model.CustomJWToken;
 import model.JWTTabModel;
 import model.Settings;
-import model.Strings;
 import model.TimeClaim;
+
+import static app.controllers.VerificationData.verifyTokenWithKeyForAlgorithm;
 
 // view to check JWTs such as in the HTTP history
 public class JWTTabController implements IMessageEditorTab {
@@ -122,35 +115,17 @@ public class JWTTabController implements IMessageEditorTab {
   }
 
   public void checkKey(String key) {
-    jwtTM.setVerificationResult("");
-    String curAlgo = getCurrentAlgorithm();
-    String algoType = AlgorithmLinker.getTypeOf(getCurrentAlgorithm());
-    try {
-      JWTVerifier verifier = JWT.require(AlgorithmLinker.getVerifierAlgorithm(curAlgo, key)).build();
-      DecodedJWT test = verifier.verify(jwtTM.getJWT());
-      jwtTM.setVerificationLabel(Strings.verificationValid);
-      jwtTM.setVerificationColor(Settings.COLOR_VALID);
-      test.getAlgorithm();
-      jwtVT.updateSetView(algoType);
-    } catch (JWTVerificationException e) {
-      if (e instanceof SignatureVerificationException) {
-        jwtTM.setVerificationColor(Settings.COLOR_INVALID);
-        jwtTM.setVerificationLabel(Strings.verificationInvalidSignature);
-      } else if (e instanceof InvalidClaimException) {
-        jwtTM.setVerificationColor(Settings.COLOR_PROBLEM_INVALID);
-        jwtTM.setVerificationLabel(Strings.verificationInvalidClaim);
-      } else {
-        jwtTM.setVerificationColor(Settings.COLOR_PROBLEM_INVALID);
-        jwtTM.setVerificationLabel(Strings.verificationError);
-      }
-      jwtTM.setVerificationResult(e.getMessage());
-      jwtVT.updateSetView(algoType);
-    } catch (IllegalArgumentException | UnsupportedEncodingException e) {
-      jwtTM.setVerificationResult(e.getMessage());
-      jwtTM.setVerificationLabel(Strings.verificationInvalidKey);
-      jwtTM.setVerificationColor(Settings.COLOR_PROBLEM_INVALID);
-      jwtVT.updateSetView(algoType);
-    }
+    String curAlgo =  getCurrentAlgorithm();
+    String algoType = AlgorithmLinker.getTypeOf(curAlgo);
+
+    VerificationData verificationData = verifyTokenWithKeyForAlgorithm(jwtTM.getJWT(), key, curAlgo);
+
+    jwtTM.setVerificationColor(verificationData.signatureColor);
+    jwtTM.setVerificationLabel(verificationData.verificationLabel);
+    jwtTM.setVerificationResult(verificationData.verificationResult);
+
+    jwtVT.updateSetView(algoType);
+
     JWTTabModel current = new JWTTabModel(key, content);
     int containsIndex = modelStateList.indexOf(current);
     if (containsIndex != -1) { // we know this request, update the viewstate
@@ -176,8 +151,7 @@ public class JWTTabController implements IMessageEditorTab {
     return this.jwtVT;
   }
 
-  public String getCurrentAlgorithm() {
+  private String getCurrentAlgorithm() {
     return new CustomJWToken(jwtTM.getJWT()).getAlgorithm();
   }
-
 }

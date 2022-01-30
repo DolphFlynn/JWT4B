@@ -1,29 +1,21 @@
 package app.controllers;
 
 import java.awt.Component;
-import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 import javax.swing.JTabbedPane;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.JWTVerifier;
-import com.auth0.jwt.exceptions.InvalidClaimException;
-import com.auth0.jwt.exceptions.JWTVerificationException;
-import com.auth0.jwt.exceptions.SignatureVerificationException;
-import com.auth0.jwt.interfaces.DecodedJWT;
-
-import app.algorithm.AlgorithmLinker;
 import app.helpers.Output;
 import burp.ITab;
 import gui.JWTSuiteTab;
 import model.CustomJWToken;
 import model.JWTSuiteTabModel;
 import model.Settings;
-import model.Strings;
 import model.TimeClaim;
+
+import static app.controllers.VerificationData.verifyTokenWithKeyForAlgorithm;
 
 // used to provide the standalone suite tab after "User Options"
 public class JWTSuiteTabController implements ITab {
@@ -80,37 +72,14 @@ public class JWTSuiteTabController implements ITab {
   }
 
   public void contextActionKey(String key) {
+    CustomJWToken token = new CustomJWToken(jwtST.getJWTInput());
+    VerificationData verificationData = verifyTokenWithKeyForAlgorithm(token.getToken(), key, token.getAlgorithm());
+
     jwtSTM.setJwtKey(key);
-    jwtSTM.setVerificationResult("");
-    try {
-      CustomJWToken token = new CustomJWToken(jwtSTM.getJwtInput());
-      String curAlgo = token.getAlgorithm();
-      JWTVerifier verifier = JWT.require(AlgorithmLinker.getVerifierAlgorithm(curAlgo, key)).build();
-      DecodedJWT test = verifier.verify(token.getToken());
-      jwtSTM.setJwtSignatureColor(Settings.COLOR_VALID);
-      jwtSTM.setVerificationLabel(Strings.verificationValid);
-      test.getAlgorithm();
-    } catch (JWTVerificationException e) {
-      Output.output("Verification failed (" + e.getMessage() + ")");
-      jwtSTM.setVerificationResult(e.getMessage());
+    jwtSTM.setJwtSignatureColor(verificationData.signatureColor);
+    jwtSTM.setVerificationLabel(verificationData.verificationLabel);
+    jwtSTM.setVerificationResult(verificationData.verificationResult);
 
-      if (e instanceof SignatureVerificationException) {
-        jwtSTM.setJwtSignatureColor(Settings.COLOR_INVALID);
-        jwtSTM.setVerificationLabel(Strings.verificationInvalidSignature);
-      } else if (e instanceof InvalidClaimException) {
-        jwtSTM.setJwtSignatureColor(Settings.COLOR_PROBLEM_INVALID);
-        jwtSTM.setVerificationLabel(Strings.verificationInvalidClaim);
-      } else {
-        jwtSTM.setJwtSignatureColor(Settings.COLOR_PROBLEM_INVALID);
-        jwtSTM.setVerificationLabel(Strings.verificationError);
-      }
-
-    } catch (IllegalArgumentException | UnsupportedEncodingException e) {
-      Output.output("Verification failed (" + e.getMessage() + ")");
-      jwtSTM.setJwtSignatureColor(Settings.COLOR_PROBLEM_INVALID);
-      jwtSTM.setVerificationResult(e.getMessage());
-      jwtSTM.setVerificationLabel(Strings.verificationInvalidKey);
-    }
     jwtST.updateSetView();
   }
 
